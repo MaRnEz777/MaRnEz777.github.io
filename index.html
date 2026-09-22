@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
     --bg:#131311;
@@ -375,6 +376,56 @@
     color:var(--gold);
   }
 
+  /* ---------- ORDER BUTTON (Telegram Mini App CTA) ---------- */
+  /* Берём цвета из темы Telegram (--tg-theme-*), а если сайт открыт
+     в обычном браузере (переменных нет) — откатываемся на золотой
+     акцент сайта, чтобы кнопка не терялась и вне Telegram. */
+  .order-btn{
+    --btn-bg:var(--tg-theme-button-color, var(--gold));
+    --btn-text:var(--tg-theme-button-text-color, #171610);
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:15px;
+    color:var(--btn-text);
+    background:var(--btn-bg);
+    border:none;
+    padding:14px 24px;
+    border-radius:12px;
+    cursor:pointer;
+    box-shadow:0 14px 34px -10px rgba(205,165,69,0.55), 0 2px 8px rgba(0,0,0,0.3);
+    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease, background .3s ease;
+  }
+  .order-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 18px 40px -10px rgba(205,165,69,0.65), 0 4px 12px rgba(0,0,0,0.35);
+    filter:brightness(1.05);
+  }
+  .order-btn:active{ transform:translateY(0) scale(.97); }
+  .order-btn.is-sent{
+    --btn-bg:var(--green);
+    --btn-text:#0d1911;
+    box-shadow:0 14px 34px -10px rgba(79,178,134,0.55), 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .cta-row{ margin-top:24px; }
+
+  /* Плавающая кнопка — видна на любом скролле, привычный паттерн для мини-приложений */
+  .order-fab{
+    position:fixed;
+    right:20px;
+    bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index:60;
+    padding:14px 20px;
+    border-radius:100px;
+    font-size:14px;
+  }
+  @media (max-width:520px){
+    .order-fab{ right:14px; padding:12px 18px; font-size:13px; }
+  }
+
   /* ---------- FOOTER ---------- */
   footer{
     padding:32px 0 40px;
@@ -419,7 +470,7 @@
     }
   }
 </style>
-<link rel="icon" href="" type="image/png">
+<link rel="icon" href="logo.jpg" type="image/jpeg">
 </head>
 <body>
 
@@ -447,6 +498,11 @@
         <span class="tag">JavaScript</span>
         <span class="tag">Figma</span>
         <span class="tag">SEO</span>
+      </div>
+      <div class="cta-row">
+        <button type="button" class="order-btn" data-order-btn>
+          <span aria-hidden="true">🚀</span> Сделать заказ
+        </button>
       </div>
     </div>
 
@@ -574,6 +630,53 @@
       <p>// EOF</p>
     </div>
   </footer>
+
+  <!-- Плавающая кнопка заказа: остаётся на виду при любом скролле -->
+  <button type="button" class="order-btn order-fab" data-order-btn>
+    <span aria-hidden="true">🚀</span> Заказать проект
+  </button>
+
+  <script>
+    // ---------- Telegram Mini App: инициализация ----------
+    // window.Telegram появляется только если страница открыта внутри
+    // Telegram (через кнопку с web_app). В обычном браузере — undefined,
+    // поэтому везде ниже сначала проверяем его наличие.
+    const tg = window.Telegram && window.Telegram.WebApp;
+
+    if (tg) {
+      tg.ready();     // сообщаем Telegram, что страница готова к показу
+      tg.expand();    // разворачиваем на весь экран телефона
+    }
+
+    // ---------- Кнопка "Сделать заказ" ----------
+    // На странице их две (в hero и плавающая) — вешаем обработчик на обе.
+    const orderButtons = document.querySelectorAll('[data-order-btn]');
+
+    function handleOrderClick(event) {
+      const btn = event.currentTarget;
+
+      if (tg && typeof tg.sendData === 'function') {
+        // Внутри Telegram: отправляем сигнал боту.
+        // Бот получит его как message.web_app_data.data.
+        if (tg.HapticFeedback) {
+          tg.HapticFeedback.impactOccurred('medium'); // лёгкая тактильная отдача
+        }
+
+        tg.sendData('Новая заявка на проект от клиента!');
+
+        // Показываем короткое подтверждение — Telegram закрывает
+        // мини-приложение сразу после sendData(), так что это, скорее,
+        // "успеть моргнуть" зелёным перед закрытием, чем постоянное состояние.
+        btn.classList.add('is-sent');
+        btn.innerHTML = '<span aria-hidden="true">✓</span> Заявка отправлена';
+      } else {
+        // Открыто в обычном браузере (не в Telegram) — просто ведём в личные сообщения.
+        window.open('https://t.me/MaRnEz69', '_blank', 'noopener,noreferrer');
+      }
+    }
+
+    orderButtons.forEach((btn) => btn.addEventListener('click', handleOrderClick));
+  </script>
 
 </body>
 </html>
